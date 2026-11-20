@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="exp-brazo-token" content="__EXP_BRAZO_TOKEN__">
+  <meta name="color-scheme" content="dark">
+  <title>Exp-brazo · Robot de feria</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="sticky-top">
+    <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">EB</span>
+      <div>
+        <h1>Exp-brazo · Robot de feria</h1>
+        <p class="muted small">Dashboard local · funciona sin internet</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="global-pill" class="pill pill-neutral">Conectando…</span>
+      <button id="btn-pause" type="button" class="btn btn-warn">Pausar respuestas</button>
+      <label class="field-inline" for="mode-select">
+        <span>Modo</span>
+        <select id="mode-select">
+          <option value="auto">Auto</option>
+          <option value="manual">Manual</option>
+          <option value="ambient">Ambiental</option>
+          <option value="simulation">Simulación</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <div class="warning-banner" role="alert">
+    <strong>SIN VALIDAR</strong> · El paro de emergencia físico es la única
+    garantía real; la pausa de software es complementaria.
+  </div>
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones del dashboard">
+    <button type="button" class="tab-button active" data-tab="estado" role="tab" aria-selected="true">Estado</button>
+    <button type="button" class="tab-button" data-tab="envivo" role="tab" aria-selected="false">En vivo</button>
+    <button type="button" class="tab-button" data-tab="eventos" role="tab" aria-selected="false">Eventos</button>
+    <button type="button" class="tab-button" data-tab="control" role="tab" aria-selected="false">Control</button>
+    <button type="button" class="tab-button" data-tab="config" role="tab" aria-selected="false">Config</button>
+    <button type="button" class="tab-button" data-tab="comportamientos" role="tab" aria-selected="false">Comportamientos</button>
+    <button type="button" class="tab-button" data-tab="diagnostico" role="tab" aria-selected="false">Diagnóstico</button>
+    <button type="button" class="tab-button" data-tab="reproduccion" role="tab" aria-selected="false">Reproducción</button>
+  </nav>
+
+  <main class="content">
+    <!-- Estado -->
+    <section id="tab-estado" class="tab-panel active" data-panel="estado" role="tabpanel">
+      <div id="status-message" class="notice hidden" role="status"></div>
+
+      <div class="grid-2">
+        <article class="card">
+          <h2>Semáforos por capa</h2>
+          <div class="sem-grid">
+            <div class="sem">
+              <span id="dot-camera" class="dot dot-neutral" aria-hidden="true"></span>
+              <div><strong>Cámara</strong><span id="detail-camera" class="muted small">—</span></div>
+            </div>
+            <div class="sem">
+              <span id="dot-perception" class="dot dot-neutral" aria-hidden="true"></span>
+              <div><strong>Percepción</strong><span id="detail-perception" class="muted small">—</span></div>
+            </div>
+            <div class="sem">
+              <span id="dot-decision" class="dot dot-neutral" aria-hidden="true"></span>
+              <div><strong>Decisión</strong><span id="detail-decision" class="muted small">—</span></div>
+            </div>
+            <div class="sem">
+              <span id="dot-adapter" class="dot dot-neutral" aria-hidden="true"></span>
+              <div><strong>Robot</strong><span id="detail-adapter" class="muted small">—</span></div>
+            </div>
+            <div class="sem">
+              <span id="dot-supervisor" class="dot dot-neutral" aria-hidden="true"></span>
+              <div><strong>Supervisor</strong><span id="detail-supervisor" class="muted small">—</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Resumen operativo</h2>
+          <dl class="metrics">
+            <div><dt>Estado del robot</dt><dd id="robot-state">—</dd></div>
+            <div><dt>Modo</dt><dd id="mode-value">—</dd></div>
+            <div><dt>Respuestas</dt><dd id="paused-value">—</dd></div>
+            <div><dt>FPS de percepción</dt><dd id="fps-value">—</dd></div>
+            <div><dt>Latencia percepción→orden</dt><dd id="latency-value">—</dd></div>
+            <div><dt>Tiempo en marcha</dt><dd id="uptime-value">—</dd></div>
+            <div><dt>Eventos vistos</dt><dd id="events-value">—</dd></div>
+            <div><dt>Versión de config</dt><dd id="config-version">—</dd></div>
+          </dl>
+          <div class="last-error">
+            <span class="muted small">Último error</span>
+            <p id="last-error" class="mono small">—</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- En vivo -->
+    <section id="tab-envivo" class="tab-panel" data-panel="envivo" role="tabpanel">
+      <div class="grid-2 wide-left">
+        <article class="card">
+          <div class="card-head">
+            <h2>Video en vivo</h2>
+            <button id="btn-refresh-snapshot" type="button" class="btn btn-ghost">Actualizar snapshot</button>
+          </div>
+          <div class="live-wrap">
+            <img id="live-video" data-src="/video.mjpeg" alt="Video de la cámara en vivo">
+            <div id="live-placeholder" class="placeholder hidden">Cámara no disponible — modo degradado</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Confianza por gesto</h2>
+          <div id="gesture-bars" class="gesture-bars"></div>
+          <p class="muted small">
+            HOLA: mano abierta · SI: pulgar arriba · NO: índice agitándose ·
+            6-7: dos manos arriba/abajo.
+          </p>
+          <p class="muted small">La barra se activa cuando la confianza supera el 60 %.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Eventos -->
+    <section id="tab-eventos" class="tab-panel" data-panel="eventos" role="tabpanel">
+      <article class="card">
+        <div class="card-head">
+          <h2>Eventos recientes <span id="events-count" class="badge badge-neutral">0</span></h2>
+          <div class="inline-actions">
+            <a id="export-json" class="btn btn-ghost" href="/api/events/export?format=json">Exportar JSON</a>
+            <a id="export-csv" class="btn btn-ghost" href="/api/events/export?format=csv">Exportar CSV</a>
+          </div>
+        </div>
+
+        <div class="filters">
+          <label class="field-inline" for="filter-gesture">
+            <span>Gesto</span>
+            <select id="filter-gesture">
+              <option value="">Todos</option>
+              <option value="HOLA">HOLA</option>
+              <option value="SI">SI</option>
+              <option value="NO">NO</option>
+              <option value="SEIS_SIETE">SEIS_SIETE</option>
+            </select>
+          </label>
+          <label class="field-inline" for="filter-result">
+            <span>Resultado</span>
+            <select id="filter-result">
+              <option value="">Todos</option>
+              <option value="executed">executed</option>
+              <option value="would_have_done">would_have_done</option>
+              <option value="deduplicated">deduplicated</option>
+              <option value="error">error</option>
+              <option value="ignored_mode">ignored_mode</option>
+              <option value="cooldown">cooldown</option>
+              <option value="dropped_busy">dropped_busy</option>
+              <option value="queued">queued</option>
+              <option value="rejected">rejected</option>
+            </select>
+          </label>
+          <button id="btn-apply-events" type="button" class="btn">Aplicar filtros</button>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>Gesto</th>
+                <th>Confianza</th>
+                <th>Decisión</th>
+                <th>Comportamiento</th>
+                <th>Resultado</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody id="events-body"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <!-- Control -->
+    <section id="tab-control" class="tab-panel" data-panel="control" role="tabpanel">
+      <article class="card">
+        <div class="card-head">
+          <h2>Acciones rápidas</h2>
+          <div class="inline-actions">
+            <button id="btn-home" type="button" class="btn btn-warn">Ir a home</button>
+            <button id="btn-pause-control" type="button" class="btn btn-ghost">Pausar respuestas</button>
+            <label class="field-inline" for="control-mode-select">
+              <span>Modo</span>
+              <select id="control-mode-select">
+                <option value="auto">Auto</option>
+                <option value="manual">Manual</option>
+                <option value="ambient">Ambiental</option>
+                <option value="simulation">Simulación</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <p class="muted small">Los botones deshabilitados corresponden a comportamientos apagados en el catálogo.</p>
+        <div id="control-grid" class="control-grid"></div>
+        <div id="control-result" class="result-box muted small">Sin acciones todavía.</div>
+      </article>
+    </section>
+
+    <!-- Config -->
+    <section id="tab-config" class="tab-panel" data-panel="config" role="tabpanel">
+      <article class="card">
+        <div class="card-head">
+          <h2>Configuración</h2>
+          <div class="inline-actions">
+            <span class="badge badge-neutral">Versión <span id="config-version-badge">—</span></span>
+            <button id="btn-save-config" type="button" class="btn btn-ok">Guardar y aplicar</button>
+            <button id="btn-refresh-cameras" type="button" class="btn btn-ghost">Detectar cámaras</button>
+            <button id="btn-rollback-config" type="button" class="btn btn-ghost">Volver a versión anterior</button>
+          </div>
+        </div>
+        <p class="muted small">Versiones disponibles: <span id="config-versions">—</span></p>
+        <p class="muted small">Cámara: <span id="cameras-info">detectando…</span></p>
+        <div id="config-error" class="notice notice-error hidden" role="alert"></div>
+        <form id="config-form" class="config-form" autocomplete="off"></form>
+
+        <details class="advanced">
+          <summary>Avanzado (JSON)</summary>
+          <p class="muted small">
+            Podés copiar el JSON, pegarlo editado y aplicarlo al formulario antes de guardar.
+          </p>
+          <textarea id="config-json" class="mono" spellcheck="false" rows="18"></textarea>
+          <div class="inline-actions">
+            <button id="btn-apply-json" type="button" class="btn btn-ghost">Aplicar JSON al formulario</button>
+          </div>
+        </details>
+      </article>
+    </section>
+
+    <!-- Comportamientos -->
+    <section id="tab-comportamientos" class="tab-panel" data-panel="comportamientos" role="tabpanel">
+      <article class="card">
+        <div class="card-head">
+          <h2>Catálogo de comportamientos</h2>
+          <button id="btn-reload-behaviors" type="button" class="btn btn-ghost">Recargar</button>
+        </div>
+        <div id="behaviors-message" class="notice hidden" role="status"></div>
+        <div id="behaviors-list" class="behaviors-list"></div>
+      </article>
+    </section>
+
+    <!-- Diagnóstico -->
+    <section id="tab-diagnostico" class="tab-panel" data-panel="diagnostico" role="tabpanel">
+      <article class="card">
+        <div class="card-head">
+          <h2>Diagnóstico guiado</h2>
+          <div class="inline-actions">
+            <button id="btn-run-diagnostics" type="button" class="btn btn-ok">Ejecutar chequeos</button>
+            <button id="btn-copy-report" type="button" class="btn btn-ghost">Copiar reporte</button>
+          </div>
+        </div>
+        <p class="muted small">
+          Los chequeos revisan cámara, luz, red del robot, MediaPipe, rendimiento y configuración.
+        </p>
+        <div id="diagnostics-list" class="diagnostics-list"></div>
+      </article>
+    </section>
+
+    <!-- Reproducción -->
+    <section id="tab-reproduccion" class="tab-panel" data-panel="reproduccion" role="tabpanel">
+      <div class="grid-2">
+        <article class="card">
+          <h2>Reproducir un video</h2>
+          <p class="muted small">
+            Elegí un archivo local. Se sube al servidor local y se procesa para detectar gestos.
+          </p>
+          <label class="field-block" for="replay-file">
+            <span>Archivo de video</span>
+            <input id="replay-file" type="file" accept="video/*">
+          </label>
+          <dl class="metrics">
+            <div><dt>Estado</dt><dd id="replay-running">—</dd></div>
+            <div><dt>Frames procesados</dt><dd id="replay-frames">—</dd></div>
+            <div><dt>Eventos detectados</dt><dd id="replay-events">—</dd></div>
+            <div><dt>Error</dt><dd id="replay-error">—</dd></div>
+          </dl>
+        </article>
+
+        <article class="card">
+          <h2>Grabar un video</h2>
+          <p class="muted small">
+            Graba la cámara local durante los segundos indicados (sin audio).
+          </p>
+          <label class="field-block" for="record-seconds">
+            <span>Segundos</span>
+            <input id="record-seconds" type="number" min="1" max="3600" step="1" value="10">
+          </label>
+          <div class="inline-actions">
+            <button id="btn-record-start" type="button" class="btn btn-ok">Grabar</button>
+            <button id="btn-record-stop" type="button" class="btn btn-warn">Detener</button>
+          </div>
+          <p id="record-status" class="muted small">Sin grabaciones todavía.</p>
+        </article>
+      </div>
+
+      <article class="card">
+        <h2>Eventos del replay</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>Hora</th><th>Gesto</th><th>Confianza</th><th>Origen</th></tr>
+            </thead>
+            <tbody id="replay-events-body"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Exp-brazo · operación local, sin telemetría.</span>
+    <span class="muted">Paro de emergencia físico = única garantía real.</span>
+  </footer>
+
+  <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+logs/*
+recordings/*
+config_versions/*.yaml
+!config_versions/.gitkeep
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Ruedas offline: se generan con ./install.sh --fetch-wheels
+wheels/*
+!wheels/.gitkeep
