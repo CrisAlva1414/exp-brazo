@@ -1,6 +1,6 @@
-version: 1
+version: 2
 camera:
-  index: 0
+  index: 2
   width: 640
   height: 480
   fps: 30
@@ -15,6 +15,7 @@ perception:
   hand_model_complexity: 0
   process_max_width: 640
   detection_fps: 15
+  global_cooldown_s: 0.8
   gestures:
     HOLA:
       enabled: true
@@ -24,26 +25,32 @@ perception:
       window_ms: 3000
       min_direction_changes: 3
       min_amplitude_ratio: 0.15
+      min_cycles: 3
+      min_correlation: 0.5
       min_step_ratio: 0.012
-      dominance_ratio: 1.3
+      dominance_ratio: 1.5
       smoothing_alpha: 0.6
       min_samples: 7
       require_raised: true
+      require_two_hands: false
       min_visibility: 0.6
     SI:
       enabled: true
-      min_confidence: 0.7
-      hold_ms: 300
+      min_confidence: 0.5
+      hold_ms: 250
       cooldown_s: 2.0
       window_ms: 2500
       min_direction_changes: 4
       min_amplitude_ratio: 0.06
+      min_cycles: 3
+      min_correlation: 0.5
       min_step_ratio: 0.02
       dominance_ratio: 2.0
       smoothing_alpha: 0.6
       min_samples: 7
-      min_visibility: 0.6
       require_raised: false
+      require_two_hands: false
+      min_visibility: 0.6
     'NO':
       enabled: true
       min_confidence: 0.7
@@ -52,10 +59,14 @@ perception:
       window_ms: 3000
       min_direction_changes: 3
       min_amplitude_ratio: 0.12
+      min_cycles: 3
+      min_correlation: 0.5
       min_step_ratio: 0.012
       dominance_ratio: 2.0
       smoothing_alpha: 0.6
       min_samples: 7
+      require_raised: false
+      require_two_hands: false
       min_visibility: 0.6
     SEIS_SIETE:
       enabled: true
@@ -63,6 +74,8 @@ perception:
       hold_ms: 400
       cooldown_s: 3.0
       window_ms: 4000
+      min_direction_changes: 3
+      min_amplitude_ratio: 0.04
       min_cycles: 3
       min_correlation: 0.55
       min_step_ratio: 0.008
@@ -72,7 +85,6 @@ perception:
       require_raised: true
       require_two_hands: true
       min_visibility: 0.6
-  global_cooldown_s: 0.8
 decision:
   anti_repetition: true
   busy_policy: drop
@@ -85,33 +97,33 @@ robot:
   connect_timeout_s: 3.0
   max_speed_pct: 30
   max_accel_pct: 30
-  dedupe_ttl_s: 300.0
   joint_limits:
     J1:
-    - -180
-    - 180
+    - -180.0
+    - 180.0
     J2:
-    - -180
-    - 180
+    - -180.0
+    - 180.0
     J3:
-    - -160
-    - 160
+    - -160.0
+    - 160.0
     J4:
-    - -180
-    - 180
+    - -180.0
+    - 180.0
     J5:
-    - -180
-    - 180
+    - -180.0
+    - 180.0
     J6:
-    - -180
-    - 180
+    - -180.0
+    - 180.0
   home_joints:
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  dedupe_ttl_s: 300.0
 dashboard:
   host: 127.0.0.1
   port: 8000
@@ -119,9 +131,9 @@ dashboard:
 supervisor:
   heartbeat_timeout_s: 5.0
   restart_backoff_s:
-  - 1
-  - 2
-  - 4
-  - 8
-  - 15
+  - 1.0
+  - 2.0
+  - 4.0
+  - 8.0
+  - 15.0
   ambient_interval_s: 20.0

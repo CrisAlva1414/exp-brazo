@@ -509,3 +509,47 @@ def test_diagonal_nose_motion_does_not_trigger_si_or_no() -> None:
         events.extend(tracker.update(frame, now=t))
         t += DT
     assert events == []
+
+
+def test_67_does_not_emit_hola_when_two_hands_are_raised() -> None:
+    config = make_config(
+        {
+            Gesture.HOLA: {
+                "hold_ms": 0,
+                "cooldown_s": 0.0,
+                "min_direction_changes": 1,
+                "min_amplitude_ratio": 0.01,
+                "min_confidence": 0.1,
+                "require_raised": True,
+            },
+            Gesture.SI: {"enabled": False},
+            Gesture.NO: {"enabled": False},
+            Gesture.SEIS_SIETE: {
+                "hold_ms": 100,
+                "cooldown_s": 10.0,
+                "min_cycles": 2,
+                "min_correlation": 0.5,
+                "min_confidence": 0.1,
+                "require_two_hands": True,
+            },
+        }
+    )
+    tracker = GestureTracker(config, clock=lambda: 0.0)
+    events = []
+    t = 0.0
+    for _ in range(int(3.0 * FPS)):
+        ly = 0.4 + 0.08 * math.sin(2 * math.pi * t / 0.6)
+        ry = 0.4 - 0.08 * math.sin(2 * math.pi * t / 0.6)
+        frame = make_frame(
+            t,
+            left_shoulder=Landmark(0.3, 0.7),
+            right_shoulder=Landmark(0.7, 0.7),
+            left_wrist=Landmark(0.3, ly),
+            right_wrist=Landmark(0.7, ry),
+            hands=[open_hand(0.3, 0.3), open_hand(0.7, 0.3)],
+        )
+        events.extend(tracker.update(frame, now=t))
+        t += DT
+    gestures = [event.gesture for event in events]
+    assert Gesture.SEIS_SIETE in gestures
+    assert Gesture.HOLA not in gestures

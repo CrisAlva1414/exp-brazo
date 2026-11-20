@@ -81,10 +81,9 @@ def thumbs_up(hand: Hand) -> DetectionResult:
     thumb_mcp = hand.landmarks[HAND_INDEX["THUMB_MCP"]]
     thumb_ip = hand.landmarks[HAND_INDEX["THUMB_IP"]]
     thumb_tip = hand.landmarks[HAND_INDEX["THUMB_TIP"]]
-    thumb_extended = (
-        distance(thumb_tip, wrist) > distance(thumb_ip, wrist) * 1.05
-        and thumb_tip.y < thumb_mcp.y
-    )
+    thumb_extended = distance(thumb_tip, wrist) > distance(thumb_ip, wrist) * 1.05
+    # La verticalidad es una señal blanda: la mano puede estar algo rotada.
+    vertical = thumb_tip.y <= thumb_mcp.y + 0.03
     folded = sum(
         1
         for pip_name, tip_name in (
@@ -97,12 +96,15 @@ def thumbs_up(hand: Hand) -> DetectionResult:
     )
     detected = thumb_extended and folded >= 3
     thumb_ratio = distance(thumb_tip, wrist) / max(distance(thumb_ip, wrist), 1e-9)
-    confidence = 0.5 * clamp01((thumb_ratio - 1.0) / 0.6) + 0.5 * (folded / 4.0)
+    thumb_score = clamp01((thumb_ratio - 1.0) / 0.4)
+    fold_score = folded / 4.0
+    confidence = 0.7 * thumb_score + 0.3 * fold_score
     return DetectionResult(
         detected=detected,
         confidence=confidence,
         metrics={
             "thumb_extended": 1 if thumb_extended else 0,
+            "thumb_vertical": 1 if vertical else 0,
             "folded_fingers": folded,
         },
     )
@@ -264,10 +266,13 @@ def detect_hola(
     min_step_ratio: float = 0.01,
     smoothing_alpha: float = 0.65,
     min_samples: int = 5,
+    other_amplitude: float | None = None,
+    dominance_ratio: float = 1.5,
 ) -> DetectionResult:
-    """Detecta saludo por oscilación horizontal de la muñeca.
+    """Detecta saludo por oscilación horizontal dominante de la muñeca.
 
-    Umbrales heurísticos **SIN VALIDAR** con personas reales.
+    Exige que el eje X domine al Y para no confundir el 6-7 (sube/baja con
+    dos manos) con un saludo. **SIN VALIDAR** con personas reales.
     """
 
     return _oscillation_result(
@@ -278,6 +283,8 @@ def detect_hola(
         min_step_ratio=min_step_ratio,
         smoothing_alpha=smoothing_alpha,
         min_samples=min_samples,
+        other_amplitude=other_amplitude,
+        dominance_ratio=dominance_ratio,
     )
 
 

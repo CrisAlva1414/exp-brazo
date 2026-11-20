@@ -25,15 +25,15 @@ perception:
       min_direction_changes: 3
       min_amplitude_ratio: 0.15
       min_step_ratio: 0.012
-      dominance_ratio: 1.3
+      dominance_ratio: 1.5
       smoothing_alpha: 0.6
       min_samples: 7
       require_raised: true
       min_visibility: 0.6
     SI:
       enabled: true
-      min_confidence: 0.7
-      hold_ms: 300
+      min_confidence: 0.5
+      hold_ms: 250
       cooldown_s: 2.0
       window_ms: 2500
       min_direction_changes: 4

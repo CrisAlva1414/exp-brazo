@@ -16,6 +16,7 @@ from collections.abc import Callable
 from ..contracts import Gesture, PerceptionConfig, PerceptionEvent
 from .detectors import (
     DetectionResult,
+    amplitude,
     clamp01,
     detect_hola,
     detect_shake,
@@ -28,6 +29,7 @@ from .landmarks import HAND_INDEX, FrameLandmarks, Hand, Landmark, Pose
 
 # Buffers por señal: HOLA usa muñeca x; NO usa punta del índice; SEIS ambas muñecas.
 _HOLA = "HOLA"
+_HOLA_Y = "HOLA_Y"
 _NO_INDEX = "NO_INDEX"
 _SEIS_LEFT = "SEIS_LEFT"
 _SEIS_RIGHT = "SEIS_RIGHT"
@@ -48,7 +50,8 @@ class GestureTracker:
         self._clock = clock
         self._config = perception_config
         self._buffers: dict[str, deque[tuple[float, float]]] = {
-            key: deque() for key in (_HOLA, _NO_INDEX, _SEIS_LEFT, _SEIS_RIGHT)
+            key: deque()
+            for key in (_HOLA, _HOLA_Y, _NO_INDEX, _SEIS_LEFT, _SEIS_RIGHT)
         }
         self._candidate_since: dict[Gesture, float] = {}
         self._last_emit: dict[Gesture, float] = {}
@@ -99,7 +102,16 @@ class GestureTracker:
 
             hand, hand_size = self._select_open_hand(frame.hands)
             hola_settings = self._settings(Gesture.HOLA)
-            if hand is not None:
+            pose_left = self._pose_point(frame.pose, "LEFT_WRIST")
+            pose_right = self._pose_point(frame.pose, "RIGHT_WRIST")
+            two_hands_raised = (
+                len(frame.hands) >= 2
+                and pose_left is not None
+                and pose_right is not None
+                and self._is_raised(frame.pose, pose_left)
+                and self._is_raised(frame.pose, pose_right)
+            )
+            if hand is not None and not two_hands_raised:
                 self._last_hand_size = max(hand_size, 1e-6)
                 wrist = hand.landmarks[HAND_INDEX["WRIST"]]
                 raised_ok = not (hola_settings and hola_settings.require_raised)
@@ -107,6 +119,7 @@ class GestureTracker:
                     raised_ok = self._is_raised(frame.pose, wrist)
                 if raised_ok:
                     self._append(_HOLA, t, wrist.x, Gesture.HOLA)
+                    self._append(_HOLA_Y, t, wrist.y, Gesture.HOLA)
                     self._evaluate_hola(t, events)
                 else:
                     self._mark_no_signal(Gesture.HOLA)
@@ -177,6 +190,7 @@ class GestureTracker:
     def _evaluate_hola(self, t: float, events: list[PerceptionEvent]) -> None:
         settings = self._settings(Gesture.HOLA)
         values = self._values(_HOLA, t, Gesture.HOLA)
+        values_y = self._values(_HOLA_Y, t, Gesture.HOLA)
         result = detect_hola(
             values,
             self._last_hand_size,
@@ -185,6 +199,8 @@ class GestureTracker:
             min_step_ratio=settings.min_step_ratio if settings else 0.01,
             smoothing_alpha=settings.smoothing_alpha if settings else 0.65,
             min_samples=settings.min_samples if settings else 5,
+            other_amplitude=amplitude(values_y),
+            dominance_ratio=settings.dominance_ratio if settings else 1.5,
         )
         self._handle_result(Gesture.HOLA, result, t, events)
 
@@ -284,6 +300,7 @@ class GestureTracker:
             self._buffers[_NO_INDEX].clear()
         elif gesture is Gesture.HOLA:
             self._buffers[_HOLA].clear()
+            self._buffers[_HOLA_Y].clear()
 
     def _mark_no_signal(self, gesture: Gesture) -> None:
         self._candidate_since.pop(gesture, None)
