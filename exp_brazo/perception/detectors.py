@@ -81,9 +81,10 @@ def thumbs_up(hand: Hand) -> DetectionResult:
     thumb_mcp = hand.landmarks[HAND_INDEX["THUMB_MCP"]]
     thumb_ip = hand.landmarks[HAND_INDEX["THUMB_IP"]]
     thumb_tip = hand.landmarks[HAND_INDEX["THUMB_TIP"]]
-    thumb_extended = distance(thumb_tip, wrist) > distance(thumb_ip, wrist) * 1.05
-    # La verticalidad es una señal blanda: la mano puede estar algo rotada.
-    vertical = thumb_tip.y <= thumb_mcp.y + 0.03
+    thumb_ratio = distance(thumb_tip, wrist) / max(distance(thumb_ip, wrist), 1e-9)
+    # Cadena vertical: señal estable para un pulgar arriba estático.
+    vertical = thumb_tip.y < thumb_ip.y < thumb_mcp.y
+    thumb_extended = thumb_ratio > 1.05 or vertical
     folded = sum(
         1
         for pip_name, tip_name in (
@@ -95,10 +96,9 @@ def thumbs_up(hand: Hand) -> DetectionResult:
         if _finger_folded(hand, pip_name, tip_name, wrist)
     )
     detected = thumb_extended and folded >= 3
-    thumb_ratio = distance(thumb_tip, wrist) / max(distance(thumb_ip, wrist), 1e-9)
     thumb_score = clamp01((thumb_ratio - 1.0) / 0.4)
     fold_score = folded / 4.0
-    confidence = 0.7 * thumb_score + 0.3 * fold_score
+    confidence = 0.6 * thumb_score + 0.3 * fold_score + 0.1 * (1.0 if vertical else 0.0)
     return DetectionResult(
         detected=detected,
         confidence=confidence,
