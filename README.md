@@ -3,6 +3,20 @@
 Robot de feria que reacciona a gestos de las manos y se opera desde una
 página web local. Funciona **sin internet** una vez instalado.
 
+## Clonar en otra PC (rápido)
+
+```bash
+git clone --depth 1 https://github.com/CrisAlva1414/exp-brazo.git
+cd exp-brazo
+./install.sh        # instala dependencias (una vez, con internet)
+./start.sh --mock   # prueba sin brazo físico
+```
+
+Abrí `http://127.0.0.1:8000`. En **Config → Detectar cámaras** elegí la
+cámara USB y guardá. El repo ya incluye los modelos `.task`; no se
+descargan en runtime. Si la otra PC no tiene internet, copiá la carpeta
+`wheels/` desde esta máquina antes de `./install.sh`.
+
 ## ¿Qué hace?
 
 Una cámara mira a las personas y detecta cuatro gestos (HOLA, SI, NO y
