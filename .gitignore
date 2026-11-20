@@ -12,3 +12,6 @@ config_versions/*.yaml
 # Ruedas offline: se generan con ./install.sh --fetch-wheels
 wheels/*
 !wheels/.gitkeep
+
+# Estado local de auditoría/orquestación
+state/*.md
